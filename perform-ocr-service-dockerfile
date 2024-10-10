@@ -1,0 +1,9 @@
+FROM python:3.9.13
+
+RUN apt update && apt install -y tesseract-ocr
+RUN pip install poetry==1.2.2
+COPY . .
+RUN poetry env use 3.9.13 && poetry install
+ENV PYTHONPATH=${PYTHONPATH}:pii_challenge
+
+ENTRYPOINT poetry run python pii_challenge/perform-ocr-service/perform_ocr.py 
