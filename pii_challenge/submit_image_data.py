@@ -59,20 +59,12 @@ if __name__ == "__main__":
                     with open(terms_file_path) as f:
                         pii_terms = json.load(f)["pii_terms"]
                         logging.debug(pii_terms)
-                        
                     
-                    body = {"image_path": str(image_path)}
                     # queue_declare is idempotent. Result is same no matter how many times it is called.
                     channel.queue_declare("images")
-                    channel.basic_publish(
-                        exchange="", routing_key="images", body=json.dumps(body)
-                    )
-                    
-                    # queue_declare is idempotent. Result is same no matter how many times it is called.
-                    channel.queue_declare("pii_terms")
                     body = {"image_path": str(image_path), "pii_terms": pii_terms}
                     channel.basic_publish(
-                        exchange="", routing_key="pii_terms", body=json.dumps(body)
+                        exchange="", routing_key="images", body=json.dumps(body)
                     )
 
     except Exception as e:
