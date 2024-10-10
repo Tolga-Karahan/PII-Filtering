@@ -1,4 +1,5 @@
 from PIL import Image
+from PIL.ImageFile import ImageFile
 import json
 import logging
 import os
@@ -10,7 +11,7 @@ from pytesseract import Output
 import pandas as pd
 
 from models.models import TextBoundingBox
-from utils import EnhancedJSONEncoder
+from utils.utils import EnhancedJSONEncoder
 
 def connect_to_broker():
     credentials = pika.PlainCredentials(
@@ -26,6 +27,20 @@ def callback(ch, method, properties, body):
     body = json.loads(body.decode())
     logging.info(f"Consumed message: {body}")
     img_path = body["image_path"]
+    
+    boxes = detect_text(img_path)
+    # ch.basic_ack()
+    
+    # publish bounding boxes
+    logging.info(f"Publishing bounding boxes!")
+    # queue_declare is idempotent. Result is same no matter how many times it is called.
+    ch.queue_declare("bounding_boxes")
+    body["boxes"] = json.dumps(boxes, cls=EnhancedJSONEncoder)
+    ch.basic_publish(
+        exchange="", routing_key="bounding_boxes", body=json.dumps(body)
+    )
+        
+def detect_text(img_path: str) -> list[TextBoundingBox]:
     result = pytesseract.image_to_data(
         Image.open(img_path),
         output_type=Output.DICT,
@@ -43,24 +58,9 @@ def callback(ch, method, properties, body):
         if result["conf"][i] > 0.5 and result["text"][i].strip() != ''
     ]
     logging.info("Boxes are calculated!")
-    # publish bounding boxes
-    for box in boxes:
-        logging.info(f"Publishing box: {box}")
-        # queue_declare is idempotent. Result is same no matter how many times it is called.
-        ch.queue_declare("bounding_boxes")
-        body = {"box": json.dumps(box, cls=EnhancedJSONEncoder)}
-        ch.basic_publish(
-            exchange="", routing_key="bounding_boxes", body=json.dumps(body)
-        )
     
-
-
-# from spacy import displacy, load
-# nlp = load("en_core_web_sm")
-# doc = nlp(pytesseract.image_to_string(Image.open("/Users/tkarahan/repos/pii-challenge/images/invoice.png")))
-# entities = [(ent.text, ent.label_, ent.lemma_) for ent in doc.ents]
-# df = pd.DataFrame(entities, columns=['text', 'type', 'lemma'])
-# print(df)
+    return boxes
+    
 
 if __name__ == "__main__":
     logging.basicConfig(
