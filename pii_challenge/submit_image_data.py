@@ -18,7 +18,7 @@ def connect_to_broker():
     return connection
 
 
-def submit_images(channel):
+def submit_images(channel, exchange_name:str):
     supported_image_extensions = os.getenv(
         "SUPPORTED_IMAGE_EXTENSIONS", "jpg,png"
     ).split(",")
@@ -30,11 +30,11 @@ def submit_images(channel):
 
     logging.debug(images)
     for img in images:
-        publish_image_data(img, supported_image_extensions, metadata_folder, channel)
+        publish_image_data(img, exchange_name, supported_image_extensions, metadata_folder, channel)
 
 
 def publish_image_data(
-    img: str, supported_image_extensions: list[str], metadata_folder_path: Path, channel: BlockingChannel
+    img: str, exchange_name:str, supported_image_extensions: list[str], metadata_folder_path: Path, channel: BlockingChannel
 ):
     logging.debug(img)
     path = Path(img)
@@ -54,11 +54,9 @@ def publish_image_data(
                 pii_terms = json.load(f)["pii_terms"]
                 logging.debug(pii_terms)
 
-            # queue_declare is idempotent. Result is same no matter how many times it is called.
-            channel.queue_declare("images")
             body = {"image_path": str(img), "pii_terms": pii_terms}
             channel.basic_publish(
-                exchange="", routing_key="images", body=json.dumps(body)
+                exchange=exchange_name, routing_key="images", body=json.dumps(body)
             )
 
 
@@ -70,7 +68,12 @@ if __name__ == "__main__":
         dotenv.load_dotenv()
         con = connect_to_broker()
         channel = con.channel()
-        submit_images(channel)
+        # queue_declare is idempotent. Result is same no matter how many times it is called.
+        channel.queue_declare("images")
+        exchange_name = "images_exchange"
+        channel.exchange_declare(exchange=exchange_name, exchange_type='direct')
+        channel.queue_bind(exchange=exchange_name, queue="images", routing_key="images")
+        submit_images(channel, exchange_name)
 
     except Exception as e:
         logging.error(e)
