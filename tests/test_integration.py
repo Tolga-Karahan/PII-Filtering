@@ -44,8 +44,11 @@ def gt_boxes():
         {"text": "MA", "left": 351, "right": 369, "top": 301, "bottom": 311},
     ]
 
+@pytest.fixture
+def exchange_name():
+    yield "images_exchange"
 
-def test_pii_bounding_boxes(channel, declare_queues, gt_boxes):
+def test_pii_bounding_boxes(channel, exchange_name, declare_queues, gt_boxes):
     def callback(ch, method, properties, body):
         ch.stop_consuming()
         boxes = json.loads(body.decode())
@@ -71,6 +74,7 @@ def test_pii_bounding_boxes(channel, declare_queues, gt_boxes):
 
     publish_image_data(
         "invoice.png",
+        exchange_name,
         supported_image_extensions,
         Path("data/metadata").absolute(),
         channel,

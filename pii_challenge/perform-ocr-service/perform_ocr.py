@@ -12,6 +12,7 @@ from pytesseract import Output
 from models.models import TextBoundingBox
 from utils.utils import EnhancedJSONEncoder
 
+EXCHANGE_NAME= "boxes_exchange"
 
 def connect_to_broker():
     credentials = pika.PlainCredentials(
@@ -38,7 +39,7 @@ def callback(ch, method, properties, body):
     # publish bounding boxes
     logging.info(f"Publishing bounding boxes!")
     body["boxes"] = json.dumps(boxes, cls=EnhancedJSONEncoder)
-    ch.basic_publish(exchange="", routing_key="bounding_boxes", body=json.dumps(body))
+    ch.basic_publish(exchange=EXCHANGE_NAME, routing_key="bounding_boxes", body=json.dumps(body))
 
 
 def detect_text(img_path: str) -> list[TextBoundingBox]:
@@ -73,5 +74,7 @@ if __name__ == "__main__":
     # queue_declare is idempotent. Result is same no matter how many times it is called.
     channel.queue_declare("bounding_boxes")
     channel.queue_declare("images")
+    channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type='direct')
+    channel.queue_bind(exchange=EXCHANGE_NAME, queue="bounding_boxes", routing_key="bounding_boxes")
     channel.basic_consume(queue="images", auto_ack=True, on_message_callback=callback)
     channel.start_consuming()

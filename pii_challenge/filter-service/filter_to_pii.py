@@ -8,6 +8,7 @@ import logging
 from models.models import TextBoundingBox
 from utils.utils import EnhancedJSONEncoder
 
+EXCHANGE_NAME= "filter_pii_exchange"
 
 def connect_to_broker():
     credentials = pika.PlainCredentials(
@@ -32,7 +33,7 @@ def callback(ch, method, properties, body):
 
     body = json.dumps(pii_boxes, cls=EnhancedJSONEncoder)
     logging.info(body)
-    ch.basic_publish(exchange="", routing_key="pii_bounding_boxes", body=body)
+    ch.basic_publish(exchange=EXCHANGE_NAME, routing_key="pii_bounding_boxes", body=body)
 
 
 def find_pii_terms(pii_terms: list[str], boxes: list[TextBoundingBox]):
@@ -51,6 +52,8 @@ if __name__ == "__main__":
         # queue_declare is idempotent. Result is same no matter how many times it is called.
         channel.queue_declare("bounding_boxes")
         channel.queue_declare("pii_bounding_boxes")
+        channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type='direct')
+        channel.queue_bind(exchange=EXCHANGE_NAME, queue="pii_bounding_boxes", routing_key="pii_bounding_boxes")
         channel.basic_consume(
             queue="bounding_boxes", auto_ack=True, on_message_callback=callback
         )
