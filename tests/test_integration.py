@@ -67,6 +67,9 @@ def test_pii_bounding_boxes(channel, exchange_name, declare_queues, gt_boxes):
 
     channel.queue_declare("images")
     channel.queue_declare("pii_bounding_boxes")
+    
+    channel.exchange_declare(exchange=exchange_name, exchange_type='direct')
+    channel.queue_bind(exchange=exchange_name, queue="images", routing_key="images")
 
     supported_image_extensions = os.getenv(
         "SUPPORTED_IMAGE_EXTENSIONS", "jpg,png"
