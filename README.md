@@ -1,3 +1,5 @@
+## Diagram
+![](readme-images/diagram.png)
 ## Installation
 1. Install Poetry 1.2.2: `pip install poetry==1.2.2`
 2. Install dependencies: `poetry install`
