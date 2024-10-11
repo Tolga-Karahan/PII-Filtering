@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbit-data:/var/lib/rabbitmq
+
+  perform-ocr-service:
+    image: perform-ocr-service:0.1.0
+    restart: always
+    build:
+      context: .
+      dockerfile: perform-ocr-service-dockerfile
+    depends_on:
+      - rabbitmq
+    environment:
+      - RABBITMQ_USERNAME=admin
+      - RABBITMQ_PASSWORD=admin
+      - RABBITMQ_HOST=rabbitmq
+      - DATA_SOURCE=/data
+    volumes:
+      - ./data:/data
+
+  filter-pii-service:
+    image: filter-pii-service:0.1.0
+    restart: always
+    build:
+      context: .
+      dockerfile: filter-pii-service-dockerfile
+    depends_on:
+      - rabbitmq
+    environment:
+      - RABBITMQ_USERNAME=admin
+      - RABBITMQ_PASSWORD=admin
+      - RABBITMQ_HOST=rabbitmq
+
+volumes:
+  rabbit-data:
