@@ -1,5 +1,5 @@
 ## How to run
-1. Run docker-compose command to build and start services:
+1. Run docker-compose command to build and start services. You can see some error messages until all services are up and running. Please wait a few seconds:  
 `docker-compose up`
 
 2. Change directory to `pii_challenge` folder and run the command below to populate queues:
@@ -10,7 +10,7 @@
 ## How to run Integration tests
 1. Export PYTHONPATH in the root directory of the project:  
 `export PYTHONPATH=$(pwd)`
-2. Run docker-compose command in another terminal to start services:
+2. Run docker-compose command to build and start services. You can see some error messages until all services are up and running. Please wait a few seconds:  
 `docker-compose up`
 3. When all service up and running, execute the pytest command to run the test from root project directory:
 `poetry run pytest tests/`
