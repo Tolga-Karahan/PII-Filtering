@@ -1,3 +1,7 @@
+## Installation
+1. Install Poetry 1.2.2: `pip install poetry==1.2.2`
+2. Install dependencies: `poetry install`
+
 ## How to run
 1. Run docker-compose command to build and start services. You can see some error messages until all services are up and running. Please wait a few seconds:  
 `docker-compose up`
